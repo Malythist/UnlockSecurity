@@ -1,4 +1,4 @@
-#Unlock Security
+## Unlock Security
 
 This app will take a photo of the person who unlocked your phone and save it to the gallery!
 
