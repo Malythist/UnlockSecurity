@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.malithyst.mysecurity.ui.theme.MySecurityTheme
@@ -44,8 +46,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MySecurityTheme {
                 val scope = rememberCoroutineScope()
+                val context = LocalContext.current
 
-                // Стейт кнопки: idle -> activating -> active
                 var buttonState by remember { mutableStateOf(ButtonState.Idle) }
 
                 val buttonText = when (buttonState) {
@@ -62,27 +64,30 @@ class MainActivity : ComponentActivity() {
                     onClick = {
                         when (buttonState) {
                             ButtonState.Idle -> {
-                                // стартуем сервис
                                 startSecurityService()
-                                // переводим кнопку в режим "ждём"
                                 buttonState = ButtonState.Activating
 
-                                // через 7 секунд делаем кнопку "disable"
+                                // показываем toast
+                                Toast.makeText(
+                                    context,
+                                    "Пожалуйста, подождите",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                // через 10 секунд делаем кнопку "disable"
                                 scope.launch {
-                                    delay(7000)
+                                    delay(10_000)
                                     buttonState = ButtonState.Active
                                 }
                             }
 
                             ButtonState.Active -> {
-                                // стопаем сервис
                                 stopSecurityService()
-                                // возвращаем в начальное состояние
                                 buttonState = ButtonState.Idle
                             }
 
                             ButtonState.Activating -> {
-                                // игнорируем, кнопка и так disabled
+
                             }
                         }
                     }
@@ -117,9 +122,9 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class ButtonState {
-    Idle,        // "activate"
-    Activating,  // "please wait" + disabled
-    Active       // "disable"
+    Idle,
+    Activating,
+    Active
 }
 
 @Composable
