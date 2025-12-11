@@ -40,12 +40,27 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             Log.d("MySecurity", "POST_NOTIFICATIONS granted = $granted")
+            // После ответа по нотификациям сразу переходим к камере
+            askCameraPermissionIfNeeded()
+        }
+
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            Log.d("MySecurity", "CAMERA granted = $granted")
+            if (!granted) {
+                Toast.makeText(
+                    this,
+                    "Без доступа к камере приложение не сможет делать снимки при разблокировке",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Сначала уведомления, потом камера
         askNotificationPermissionIfNeeded()
 
         setContent {
@@ -86,11 +101,12 @@ class MainActivity : ComponentActivity() {
 
                                 scope.launch {
                                     delay(1_000)
-                                    buttonState = if (MySecurityService.isRunning) {
-                                        ButtonState.Active
-                                    } else {
-                                        ButtonState.Idle
-                                    }
+                                    buttonState =
+                                        if (MySecurityService.isRunning) {
+                                            ButtonState.Active
+                                        } else {
+                                            ButtonState.Idle
+                                        }
                                 }
                             }
 
@@ -117,7 +133,23 @@ class MainActivity : ComponentActivity() {
 
             if (!granted) {
                 notificationPermissionLauncher.launch(permission)
+            } else {
+                // если уже есть разрешение на нотификации — сразу идём за камерой
+                askCameraPermissionIfNeeded()
             }
+        } else {
+            // на старых версиях нотификации не спрашиваются, сразу камера
+            askCameraPermissionIfNeeded()
+        }
+    }
+
+    private fun askCameraPermissionIfNeeded() {
+        val permission = Manifest.permission.CAMERA
+        val granted = ContextCompat.checkSelfPermission(this, permission) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (!granted) {
+            cameraPermissionLauncher.launch(permission)
         }
     }
 
