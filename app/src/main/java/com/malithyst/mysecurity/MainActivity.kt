@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
@@ -33,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.malithyst.mysecurity.ui.theme.MySecurityTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -62,7 +64,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Сначала уведомления, потом камера
         askNotificationPermissionIfNeeded()
 
         setContent {
@@ -136,11 +137,9 @@ class MainActivity : ComponentActivity() {
             if (!granted) {
                 notificationPermissionLauncher.launch(permission)
             } else {
-                // если уже есть разрешение на нотификации — сразу идём за камерой
                 askCameraPermissionIfNeeded()
             }
         } else {
-            // на старых версиях нотификации не спрашиваются, сразу камера
             askCameraPermissionIfNeeded()
         }
     }
@@ -181,7 +180,10 @@ fun MySecurityScreen(
     onClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(bottom = 20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(bottom = 20.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Button(
