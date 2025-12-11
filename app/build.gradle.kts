@@ -65,6 +65,13 @@ dependencies {
 
     // Для Lifecycle в сервисе
     implementation("androidx.lifecycle:lifecycle-service:2.6.2")
+    implementation(libs.androidx.fragment)
+
+    // Навигация
+    val navVersion = "2.8.0"
+    implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
+    implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
+    implementation("androidx.navigation:navigation-compose:${navVersion}")
 
     // Testing
     testImplementation(libs.junit)
