@@ -15,11 +15,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MySecurityService : LifecycleService() {
 
@@ -27,6 +31,10 @@ class MySecurityService : LifecycleService() {
         const val NOTIFICATION_CHANNEL_ID = "my_security_channel_foreground_v3"
         const val NOTIFICATION_ID = 1
         private const val TAG = "MySecurityService"
+
+        @Volatile
+        var isRunning: Boolean = false
+            private set
     }
 
     private lateinit var cameraExecutor: ExecutorService
@@ -48,14 +56,19 @@ class MySecurityService : LifecycleService() {
         super.onCreate()
         Log.d(TAG, "onCreate()")
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
         createNotificationChannel()
         val notification = buildNotification()
         Log.d(TAG, "Calling startForeground()")
         startForeground(NOTIFICATION_ID, notification)
 
-        registerUnlockReceiver()
+        isRunning = true
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.Default) {
+                cameraExecutor = Executors.newSingleThreadExecutor()
+            }
+            registerUnlockReceiver()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -67,13 +80,18 @@ class MySecurityService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy()")
+
+        isRunning = false
+
         try {
             unregisterReceiver(unlockReceiver)
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Receiver not registered", e)
         }
 
-        cameraExecutor.shutdown()
+        if (::cameraExecutor.isInitialized) {
+            cameraExecutor.shutdown()
+        }
         releaseCamera()
     }
 
@@ -193,7 +211,11 @@ class MySecurityService : LifecycleService() {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     Log.d(TAG, "Photo saved successfully: ${photoFile.absolutePath}")
 
-                    cameraExecutor.submit {
+                    if (::cameraExecutor.isInitialized) {
+                        cameraExecutor.submit {
+                            addPhotoToGallery(photoFile)
+                        }
+                    } else {
                         addPhotoToGallery(photoFile)
                     }
 

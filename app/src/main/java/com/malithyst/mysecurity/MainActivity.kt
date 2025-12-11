@@ -13,7 +13,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,8 +26,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.malithyst.mysecurity.ui.theme.MySecurityTheme
 import kotlinx.coroutines.delay
@@ -48,12 +53,18 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val context = LocalContext.current
 
-                var buttonState by remember { mutableStateOf(ButtonState.Idle) }
+                val initialState = if (MySecurityService.isRunning) {
+                    ButtonState.Active
+                } else {
+                    ButtonState.Idle
+                }
+
+                var buttonState by remember { mutableStateOf(initialState) }
 
                 val buttonText = when (buttonState) {
-                    ButtonState.Idle -> "activate"
-                    ButtonState.Activating -> "please wait"
-                    ButtonState.Active -> "disable"
+                    ButtonState.Idle -> "Включить"
+                    ButtonState.Activating -> "Ожидание..."
+                    ButtonState.Active -> "Выключить"
                 }
 
                 val buttonEnabled = buttonState != ButtonState.Activating
@@ -67,17 +78,19 @@ class MainActivity : ComponentActivity() {
                                 startSecurityService()
                                 buttonState = ButtonState.Activating
 
-                                // показываем toast
                                 Toast.makeText(
                                     context,
                                     "Пожалуйста, подождите",
                                     Toast.LENGTH_SHORT
                                 ).show()
 
-                                // через 10 секунд делаем кнопку "disable"
                                 scope.launch {
-                                    delay(10_000)
-                                    buttonState = ButtonState.Active
+                                    delay(1_000)
+                                    buttonState = if (MySecurityService.isRunning) {
+                                        ButtonState.Active
+                                    } else {
+                                        ButtonState.Idle
+                                    }
                                 }
                             }
 
@@ -87,7 +100,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             ButtonState.Activating -> {
-
+                                // ничего не делаем
                             }
                         }
                     }
@@ -139,7 +152,15 @@ fun MySecurityScreen(
     ) {
         Button(
             onClick = onClick,
-            enabled = enabled
+            enabled = enabled,
+            modifier = Modifier
+                .width(200.dp)
+                .height(48.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF077E3C),
+                contentColor = Color.White,
+                disabledContainerColor = Color.LightGray,
+                disabledContentColor = Color.Black)
         ) {
             Text(text)
         }
@@ -151,7 +172,7 @@ fun MySecurityScreen(
 fun MySecurityScreenPreview() {
     MySecurityTheme {
         MySecurityScreen(
-            text = "activate",
+            text = "Включить",
             enabled = true,
             onClick = {}
         )
